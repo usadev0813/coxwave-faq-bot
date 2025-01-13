@@ -2,7 +2,7 @@ import os
 import pickle
 import re
 from dotenv import load_dotenv
-from util.chroma import get_chroma_client, get_or_create_collection, store_data_in_chroma
+from rag.chroma import get_chroma_client, get_or_create_collection, store_data_in_chroma
 
 load_dotenv()
 

@@ -1,7 +1,7 @@
 import os
 import chromadb
 from chromadb.config import Settings
-from util.embedding import generate_embedding
+from rag.embedding import generate_embedding
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

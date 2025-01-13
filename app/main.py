@@ -6,7 +6,7 @@ import openai
 
 from llm.llm_call import stream_gpt_response
 from llm.prompt import generate_prompt, generate_fallback_prompt, base_prompt, fallback_base_prompt
-from util.chroma import get_chroma_client, get_or_create_collection, query_chroma
+from rag.chroma import get_chroma_client, get_or_create_collection, query_chroma
 
 # 환경 변수 로드
 load_dotenv()
