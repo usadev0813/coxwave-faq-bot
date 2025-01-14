@@ -8,7 +8,7 @@ async def stream_gpt_response(messages, memory, user_message):
         stream = await openai.ChatCompletion.acreate(
             model="gpt-4o-mini",
             messages=messages,
-            max_tokens=400,
+            max_tokens=500,
             temperature=0.3,
             stream=True,
         )
