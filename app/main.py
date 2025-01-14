@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 import openai
 
 from llm.llm_call import stream_gpt_response
-from llm.prompt import generate_prompt, generate_fallback_prompt, base_prompt, fallback_base_prompt
+from llm.prompt import generate_prompt, generate_fallback_prompt
 from rag.chroma import get_chroma_client, get_or_create_collection, query_chroma
+from rag.conversation_memory import ConversationMemory
 
 # 환경 변수 로드
 load_dotenv()
@@ -25,6 +26,8 @@ if not collection_name:
     raise ValueError("COLLECTION_NAME 환경 변수가 설정되지 않았습니다.")
 collection = get_or_create_collection(client, collection_name)
 
+# 대화기록 인메모리 생성
+memory = ConversationMemory()
 
 # 스트리밍 기반 RAG API 엔드포인트
 @app.post("/query/stream")
@@ -39,31 +42,29 @@ async def query_stream(request: Request):
     result = query_chroma(collection, user_query, n_results=3)
 
     if result:
-        valid_results = [res for res in result if res["similarity_score"] >= 0.3]
+        valid_results = [res for res in result if res["similarity_score"] >= 0.2]
 
         if valid_results:
             faq_answers = [res["content"] for res in valid_results]
-            prompt = generate_prompt(user_query, faq_answers)
+            prompt = generate_prompt(faq_answers, memory.get_history())
 
-            # ChatCompletion 메시지 생성
             messages = [
-                {"role": "system", "content": base_prompt},
-                {"role": "user", "content": prompt},
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": user_query},
             ]
-
             # 스트리밍 방식으로 GPT 응답 반환
-            return StreamingResponse(stream_gpt_response(messages), media_type="text/plain")
+            return StreamingResponse(stream_gpt_response(messages, memory, user_query), media_type="text/plain")
         else:
             # 유사도가 낮을 경우, 유도형 질문 생성 및 LLM 호출
-            fallback_prompt = generate_fallback_prompt(user_query, result)
+            fallback_prompt = generate_fallback_prompt(result, memory.get_history())
 
             messages = [
-                {"role": "system", "content": fallback_base_prompt},
-                {"role": "user", "content": fallback_prompt},
+                {"role": "system", "content": fallback_prompt},
+                {"role": "user", "content": user_query},
             ]
 
             # 스트리밍 방식으로 GPT 응답 반환
-            return StreamingResponse(stream_gpt_response(messages), media_type="text/plain")
+            return StreamingResponse(stream_gpt_response(messages, memory, user_query), media_type="text/plain")
     else:
         return JSONResponse(content={"message": "검색 결과가 없습니다."}, status_code=404)
 
